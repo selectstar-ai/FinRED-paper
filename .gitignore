@@ -1,0 +1,18 @@
+# 대용량 데이터
+src/data/orig/
+src/data/contexts/R3_products/
+*.pdf
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# 기타
+*.log
+.DS_Store

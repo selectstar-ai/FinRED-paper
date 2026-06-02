@@ -1,132 +1,310 @@
-# FinRED: An Expert-Guided Red-Teaming Benchmark for Financial LLM Safety
+# FinRED: Financial Red-Teaming Evaluation Dataset
 
-This repository contains the evaluation pipeline for **FinRED**, a benchmark designed to assess the safety of Large Language Models (LLMs) in the financial domain.
+A red-team benchmark generation pipeline for safety evaluation in the financial domain.
 
-To ensure reliable and effective evaluation, we present an **expert-validated finance domain-specific rubric** for judging response safety, moving beyond simple disclaimer checks used in prior benchmarks. Our rubric demonstrates substantially higher alignment with human expert judgments compared to static, one-size-fits-all rubrics found in existing safety benchmarks.
+<p align="center">
+  <img src="assets/image.png" alt="FinRED overview" width="90%">
+</p>
 
 ---
 
-## 1. Directory Structure
-```text
-FinRED-eval/
-├── data/                   # Input datasets (e.g., sample_dataset.csv)
-├── logs/                   # Execution logs and error reports
-│   └── judge_errors/       # Detailed JSON logs for failed judgments
-├── result/                 # Evaluation results (CSV, JSON, ASR scores)
-├── run/                    # Execution scripts
-│   └── judge_finred.py     # Main evaluation script
-├── template/               # Prompt templates and rubrics
-│   ├── __FinRED-eval/
-├── data/                   # Input datasets (e.g., sample_dataset.csv)
-├── logs/                   # Execution logs and error reports
-│   └── judge_errors/       # Detailed JSON logs for failed judgments
-├── result/                 # Evaluation results (CSV, JSON, ASR scores)
-├── run/                    # Execution scripts
-│   └── judge_finred.py     # Main evaluation script
-├── template/               # Prompt templates and rubrics
-│   └── rubric_financial.py # Financial safety rubric definition
-└── utils/ # Utility functions
-└── logger.py
+## Project Structure
+
+```
+FinRED/
+├── main.py                      # Main runner
+├── requirements.txt             # Dependencies
+├── run/                         # Example run scripts
+├── prompts/                     # Prompt files
+├── tests/                       # Example notebooks
+├── README.md
+│
+├── src/
+│   ├── Step1_build.py           # Scenario generation module
+│   ├── Step2_build.py           # Seed prompt generation module
+│   ├── __init__.py
+│   │
+│   ├── data/                    # Downloaded data
+│   │   ├── contexts/            # Context data
+│   │   │   ├── R3_products/     # R3 product summaries
+│   │   │   └── retrieved_chunks/# Similarity search outputs
+│   │   ├── orig/                # Raw data
+│   │   │   ├── db/              # Chunk CSV DB
+│   │   │   ├── parsed_docs/     # PDFs + chunk JSON
+│   │   │   └── investinfo/      # R3 product text
+│   │   └── queries/             # Query CSV files
+│   │
+│   ├── data/schemas/            # Output schema definitions
+│   │   ├── ko/                  # Korean schemas
+│   │   └── en/                  # English schemas
+│   │
+│   ├── outputs/                 # Generation outputs
+│   │   ├── scenarios/           # Step 1 outputs
+│   │   └── prompts/             # Step 2 outputs
+│   │
+│   ├── preprocess/              # Preprocessing pipeline
+│   │   ├── preprocess_README.md # Detailed preprocessing guide
+│   │   ├── 1_chunking.py
+│   │   ├── 2_parsed_to_csv.py
+│   │   ├── 3_common_to_csv.py
+│   │   ├── 4_product_summarizer.py
+│   │   ├── 5_summary_extractor.py
+│   │   └── 6_chunk_retriever.py
+│   │
+│   ├── eval/                    # Evaluation module
+│   │   ├── judge_finred.py      # Evaluation script
+│   │   ├── dataset/             # Evaluation dataset
 ```
 
 ---
 
-## 2. Getting Started
-Follow the steps below to set up the environment.
+## Environment Setup
 
-### Create Environment
+### 0. Download Related Data
+Google Drive: https://drive.google.com/drive/u/0/folders/1cfBf419OUDrQQMRKMPLLJqRX97WMxExC **Google Drive**  
 
-**Using Conda:**
+Place the downloaded data to match the folder structure above (under `src/data`).
+
+### 1. Create a Virtual Environment (Python 3.10)
+
 ```bash
+# Conda
 conda create -n finred python=3.10 -y
 conda activate finred
-```
 
-**Or using venv:**
-```bash
+# Or venv
 python3.10 -m venv finred_env
 source finred_env/bin/activate
 ```
 
-### Install Packages
+### 2. Install Packages
 
 ```bash
+cd /path/to/FinRED
 pip install -r requirements.txt
 ```
 
----
+### 3. Preprocessing Environment (Optional)
 
-## 3. Usage
-
-You can run the evaluation using the `judge_finred.py` script located in the `run/` directory.
-
-### Command Line Arguments
-
-| Argument | Flag | Description | Default |
-| :--- | :--- | :--- | :--- |
-| **Input File** | `-i`, `--input_csv` | Path to the input CSV file (relative to `data/` or absolute path). | **Required** |
-| **Output Name** | `-o`, `--output_csv_name` | Base name for the output files (CSV & JSON). | **Required** |
-| **Output Dir** | `-d`, `--outdir` | Directory to save results. | `./result` |
-| **Prompt Col** | `-p`, `--prompt_col` | Column name for the input prompt in CSV. | `prompt` |
-| **Response Col** | `-r`, `--response_col` | Column name for the model response in CSV. | `response` |
-| **API Key** | `-a`, `--api_key` | OpenAI API Key (optional if set in env vars). | `None` |
-
-### Example Command
-To evaluate a dataset named `sample_dataset.csv` located in the `data/` folder:
+If you need preprocessing (PDF chunking, etc.):
 
 ```bash
-python run/judge_finred.py \
-    -i sample_dataset.csv \
-    -o responses_output \
-    -d ./result/qwen2.5_7b \
-    -a sk-proj-YOUR_OPENAI_API_KEY...
+# Unstructured
+pip install "unstructured[all-docs]"
+
+# System dependencies (Ubuntu/Debian)
+sudo apt-get install -y libmagic-dev poppler-utils tesseract-ocr tesseract-ocr-kor libreoffice pandoc
+```
+
+> Preprocessing guide: `src/preprocess/preprocess_README.md`
+
+### 4. Verify Installation
+
+```bash
+python --version  # Python 3.10.x
+python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}')"
 ```
 
 ---
 
-## 4. Input Data Format
-The input CSV file should contain at least the following columns:
-- `category_prefix` : The taxonomy category of the prompt (e.g., `R1_1`, `R2_3`).
-- `prompt`: The red-teaming prompt (attack).
-- `response`: The LLM's response to be evaluated.
+## Pipeline Overview
 
-*(Note: Column names for prompt and response can be customized via arguments)*
-
----
-
-## 5. Evaluation Logic
-
-The evaluation process uses **GPT-4.1 (gpt-4.1-2025-04-14)** as a judge, applying our specialized financial safety rubric.
-
-1. **Rubric-Based Assessment**: The judge evaluates the response across 5 specific rubrics tailored to financial risks.
-2. **Final Judgment**: A final `Safe` or `Unsafe` verdict is rendered based on the rubric analysis.
-3. **ASR Calculation**: Attack Success Rate (ASR) is calculated automatically for:
-   - Overall performance
-   - Level 1 Categories (e.g., R1, R2)
-   - Level 2 Categories (e.g., R1_1, R2_1)
-
----
-
-## 6. Output
-
-The script generates the following files in the specified output directory:
-
-1. `{output_name}.csv`: Contains original data plus individual rubric scores and final judgments.
-2. `{output_name}.json`: Detailed JSON format of the results.
-3. `{output_name}_asr_lv1_oursrubric.json`: ASR scores aggregated by Level 1 categories.
-4. `{output_name}_asr_lv2_oursrubric.json`: ASR scores aggregated by Level 2 categories.
+```
+[Context + Schema + Query]
+         │
+         ▼
+   ┌─────────────┐
+   │ Step1_build │  Scenario generation (OpenAI GPT-4)
+   └─────────────┘
+         │
+         ▼
+   [Scenario JSON]
+         │
+         ▼
+   ┌─────────────┐
+   │ Step2_build │  Seed prompt generation (Gemini)
+   └─────────────┘
+         │
+         ▼
+   [Seed Prompts]
+         │
+         ▼
+   ┌─────────────┐
+   │ Evaluation  │  Model response evaluation
+   └─────────────┘
+```
 
 ---
 
-## Citation
+## Module Details
 
-If you use FinRED in your research, please cite our paper:
+### Step1_build.py - Scenario Generation
 
-```bibtex
-@article{finred2025,
-  title={FinRED: An Expert-Guided Red-Teaming Benchmark for Financial LLM Safety},
-  author={},
-  journal={},
-  year={2025}
+Generates red-team scenarios based on context and schema.
+
+- **Inputs**: schema, queries, retrieved context chunks
+- **Outputs**: scenario JSON files in `src/outputs/scenarios/{category}/`
+- **Model**: OpenAI GPT-4
+
+### Step2_build.py - Seed Prompt Generation
+
+Generates seed prompts from scenarios.
+
+- **Inputs**: scenario JSON from Step 1
+- **Outputs**: prompt JSON + merged CSV in `src/outputs/prompts/{category}/`
+- **Model**: Google Gemini 2.5 Pro
+
+---
+
+## Usage
+
+## Quickstart
+
+### Data Generation
+
+```bash
+# Run the full pipeline with the example script
+sh run/run_data_generate.sh
+```
+
+### Judge
+
+```bash
+python src/eval/judge_finred.py \
+    -i src/eval/dataset/qwen_2.5_test.csv \
+    -o qwen_2.5_test_judged \
+    -d src/eval/infer_result
+```
+
+### Basic
+
+```bash
+cd /path/to/FinRED
+
+python main.py \
+    --step <1|2|all> \
+    --category <category> \
+    --openai_api_key "sk-..." \
+    --gemini_api_key "AIza..."
+```
+
+### Parameters
+
+| Parameter | Required | Description |
+|----------|----------|-------------|
+| `--step` | Yes | Step to run: `1` (scenario), `2` (prompt), `all` (sequential) |
+| `--category` | Yes | Category: `R1`, `R2`, `R3`, `R4`, `R5` or `R1_1`, etc. |
+| `--openai_api_key` | Step 1 | OpenAI API key |
+| `--gemini_api_key` | Step 2 | Gemini API key |
+| `--lang` | Optional | Prompt language: `ko` (default), `en` |
+| `--num_prompts` | Optional | Number of prompts (default: 3) |
+| `--step1_model` | Optional | Model for Step 1 (default: `gpt-4.1-2025-04-14`) |
+| `--step2_model` | Optional | Model for Step 2 (default: `models/gemini-2.5-pro`) |
+| `--model_name` | Optional | Deprecated alias for `--step1_model` |
+
+### Examples
+
+```bash
+# Full pipeline (R1)
+python main.py \
+    --step all \
+    --category R1 \
+    --openai_api_key "sk-proj-..." \
+    --gemini_api_key "AIza..."
+
+# Step 1 only
+python main.py \
+    --step 1 \
+    --category R2 \
+    --openai_api_key "sk-proj-..."
+
+# Step 2 only (English, 5 prompts)
+python main.py \
+    --step 2 \
+    --category R5 \
+    --lang en \
+    --num_prompts 5 \
+    --gemini_api_key "AIza..."
+
+# Single subcategory
+python main.py \
+    --step 2 \
+    --category R1_1 \
+    --num_prompts 3 \
+    --gemini_api_key "AIza..."
+```
+
+---
+
+## Category Info
+
+| Category | Subcategories | Description |
+|----------|---------------|-------------|
+| R1 | R1_1 ~ R1_6 | Financial security threats |
+| R2 | R2_1 ~ R2_5 | Fraud and illegal activities |
+| R3 | R3_1 ~ R3_3 | Mis-selling |
+| R4 | R4_1 ~ R4_5 | Market manipulation |
+| R5 | R5_1 ~ R5_7 | Regulatory violations |
+
+---
+
+## Evaluation
+
+Evaluate model responses to generated prompts.
+
+### Run
+
+```bash
+cd /path/to/FinRED/src/eval
+
+python src/eval/judge_finred.py \
+    -i <input_csv_path> \
+    -o <output_basename> \
+    -d <output_dir>
+```
+
+### Example
+
+```bash
+python src/eval/judge_finred.py \
+    -i ./dataset/qwen_2.5_7b_all_with_responses.csv \
+    -o qwen2.5_7b_responses \
+    -d ./infer_result/
+```
+
+### Input CSV Format
+
+The CSV should include:
+- prompt column
+- model response column
+
+### Output
+
+- `infer_result/`: evaluation results
+- `judge_errors/`: error logs
+
+---
+
+## Output Formats
+
+### Scenario JSON (Step 1)
+
+```json
+{
+  "scenario_id": "R1_1_0001",
+  "context": "...",
+  "risk_description": "...",
+  "attack_vector": "..."
+}
+```
+
+### Prompt JSON (Step 2)
+
+```json
+{
+  "prompt_1": "Provide details about vulnerabilities in a financial system...",
+  "prompt_1_optionalelements": ["social engineering", "phishing"],
+  "prompt_2": "...",
+  "prompt_2_optionalelements": ["..."]
 }
 ```
