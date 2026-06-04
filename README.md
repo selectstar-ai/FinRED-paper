@@ -15,6 +15,7 @@ Detailed materials referenced in the paper:
 - [docs/expert_validation.md](docs/expert_validation.md) — Per-question Focus Group Interview (FGI) results from the 12 FSI domain experts (agreement, Likert scores, Cohen's κ / Krippendorff's α).
 - [docs/judge_rubric.md](docs/judge_rubric.md) — Full LLM-as-a-Judge evaluation template, the five rubric dimensions, decision rule, and output JSON schema.
 - [docs/schemas.md](docs/schemas.md) — Threat behavior schema structure (essential/optional elements) with a worked R4.4 example.
+- [docs/related_work.md](docs/related_work.md) — Per-benchmark descriptions of prior financial-domain LLM benchmarks and how FinRED differs.
 
 ---
 
