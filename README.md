@@ -1,9 +1,9 @@
-# FinRED: Financial Red-Teaming Evaluation Dataset
+# FinRED: An Expert-Guided Benchmark Generation and Evaluation Framework for Financial LLM Red-Teaming (IEEE ICDM 2026)
 
 A red-team benchmark generation pipeline for safety evaluation in the financial domain.
 
 <p align="center">
-  <img src="assets/image.png" alt="FinRED overview" width="90%">
+  <img src="assets/finred_method.png" alt="FinRED overview" width="90%">
 </p>
 
 ---
